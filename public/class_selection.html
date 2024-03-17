@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Omni Grader - Class Selection</title>
+        <link rel="stylesheet" href="styles/Styles.css">
+        <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+    </head>
+    <body>
+        <header>
+            <div class="logo-container">
+                <img src="images/Website_Logo.png" alt="Logo" style="width:70px; height:auto;" />
+            </div>
+            <nav>
+                <ul>
+                    <li><a href= "index.html">Home</a></li>
+                    <li><a href= "login.html">Login</a></li>
+                    <li><a href= "grader.html">Grader</a></li>
+                    <li><a href= "class_selection.html">Class Selection</a></li>
+                </ul>
+            </nav>
+        </header>
+        <div style="display: flex; justify-content: center; align-items: center; margin-top: 40px;">
+            <div class="career-grade-box" style="
+                margin: 5px 10px; /* 10px on top and bottom, 5px on left and right */
+                color: #fff;
+                border-radius: 10px;
+                background: rgba(58, 53, 28, 0.5);
+                border: 2px solid rgba(255, 255, 255, 0.2);
+                backdrop-filter: blur(5px);
+                text-align: center; 
+                margin-top: 20px; 
+                display: inline-block; 
+                padding: 0px 50px; /* 0px on top and bottom, 50px on left and right */
+                width: auto;
+                height: auto;
+            ">
+                <p style="font-size: 28px; white-space: nowrap;">Career Grade: <span id="careerGrade" style="font-size: 32px; font-weight: bold;">*career Grade*</span></p>
+            </div>
+        </div>
+                           
+        <div class="profile-space">
+            <div class="profiles add-new-profile"><div class="icon-container">
+                <i class='bx bx-plus' style="font-size: 150px; font-weight: 600; margin-top: -10px; margin-left: 45px;"></i>
+            </div></div>
+            <div class="profiles settings-profile"><div class="icon-container">
+                <i class='bx bxs-cog' style="font-size: 125px; margin-left: 45px;"></i>
+            </div></div>
+        </div>  
+        </section>
+        <div class="grade-calculator-settings hidden" style=" width: 600px; margin: 0 auto; margin-top: 75px; margin-bottom: 75px; overflow-x: auto; align-items: center;">
+            <form id="calcform" autocomplete="off">
+                <div id="gradetypediv" class="form-group" style="margin-top:20px; margin-bottom: 30px; text-align: center; /* Centered title */">
+                    <i class='bx bx-cog' style="font-size: 50px; font-weight: 100;"></i>
+                </div>
+                <div class="form-group">
+                    <table id="tbl" style="border-spacing: 15px; table-layout: fixed;">
+                        <tbody>
+                            <tr>
+                                <td>Assign class grade by:</td>
+                                <td>
+                                    <label class="btn btn-secondary">
+                                        <input type="radio" name="classfmt" id="classfmt" value="1"> Percentage
+                                    </label>
+                                    <label class="btn btn-secondary active">
+                                        <input type="radio" name="classfmt" id="gradefmt2" checked="" value="2"> Letter
+                                    </label>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Number of decimal points:</td>
+                                <td>
+                                    <label class="btn btn-secondary">
+                                        <input type="radio" name="gradefmt" id="gradefmt1" value="1"> 2
+                                    </label>
+                                    <label class="btn btn-secondary">
+                                        <input type="radio" name="gradefmt" id="gradefmt2" value="2"> 3
+                                    </label>
+                                    <label class="btn btn-secondary active">
+                                        <input type="radio" name="gradefmt" id="gradefmt3" checked="" value="3"> 4
+                                    </label>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Career grade in:</td>
+                                <td><label class="btn btn-secondary">
+                                    <input type="radio" name="settingfmt" id="settingfmt" value="1"> Percentage
+                                </label>
+                                <label class="btn btn-secondary active">
+                                    <input type="radio" name="settingfmt" id="settingfmt2" checked="" value="2"> GPA
+                                </label></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </form>
+        </div>
+        
+        <div id="loginStatus">Please log in to access full features</div>
+        <div id="loginStatus2">Logged in as <span id="userName"><!-- Username--></span>. Press <a href="#" id="logoutLink">HERE</a> to logout.</div>
+
+        <script>
+            document.addEventListener('DOMContentLoaded', async () => {
+                await checkUserLoginStatus();
+                await loadRadioButtonValues(globalUserId);
+                await loadClassProfiles();
+                calculateCareerGrade();
+            
+                // Event listener for adding a new class profile
+                document.querySelector('.add-new-profile').addEventListener('click', async () => {
+                    if (globalUserId) {
+                        try {
+                            const newClass = await addClass(globalUserId);
+                            //toggleEditMode(newClass); // Edit the newly added class
+                        } catch (error) {
+                            console.error('Failed to add class:', error);
+                        }
+                    } else {
+                        console.error('User ID is not available.');
+                    }
+                });
+
+                // Event listener for toggling settings visibility
+                document.querySelector('.settings-profile').addEventListener('click', () => {
+                    const settingsDiv = document.querySelector('.grade-calculator-settings');
+                    settingsDiv.classList.toggle('hidden');
+                });
+            
+                // Logout event listener
+                document.getElementById('logoutLink').addEventListener('click', function(e) {
+                    e.preventDefault();
+                    logoutUser();
+                });
+            });
+            
+            async function loadClassProfiles() {
+                try {
+                    const response = await fetch('/user/api/getClasses', {
+                        method: 'GET',
+                        headers: {'Content-Type': 'application/json'},
+                        credentials: 'include',
+                    });
+            
+                    if (!response.ok) {
+                        throw new Error(`Failed to load classes, status: ${response.status}`);
+                    }
+            
+                    const responseData = await response.json(); // This now holds the full response object
+                    if (responseData.status === 'SUCCESS' && Array.isArray(responseData.classes)) {
+                        responseData.classes.forEach(cls => createNewProfile(cls)); // Correctly accessing the array
+                    } else {
+                        // Handle cases where the status is not SUCCESS or classes is not an array
+                        console.error("Unexpected response structure:", responseData);
+                    }
+                } catch (error) {
+                    console.error("Error loading classes:", error);
+                }
+            }
+            
+            function createNewProfile(cls) {
+                //console.log(cls);
+                const profileSpace = document.querySelector('.profile-space');
+                const newProfile = document.createElement('div');
+                newProfile.classList.add('profiles');
+                newProfile.setAttribute('data-class-id', cls._id);
+
+                let totalGradeDisplay = "--"; // Default value
+                const isLetter = document.querySelector('input[name="classfmt"][value="2"]').checked;
+
+                if (cls.total_grade !== undefined) {
+                    if (isLetter) {
+                        console.log("is letter");
+                        // If the class grade is assigned by another method (GPA or letter)
+                        totalGradeDisplay = `${cls.total_grade_letter}`;
+                        console.log("Selected format value:", document.querySelector('input[name="classfmt"]:checked').value);                  
+                    } else {
+                        console.log("is percent");
+                        // If the class grade is assigned by percentage
+                        totalGradeDisplay = `${cls.total_grade}%`;
+                        console.log("Selected format value:", document.querySelector('input[name="classfmt"]:checked').value);
+                    }
+                }
+
+                newProfile.innerHTML = `
+                    <p class="profile-title">${cls.class_name}</p>
+                    <p class="profile-grade">${totalGradeDisplay}</p>
+                    <div class="nested-p">
+                        <p class="profile-credits">${cls.credit_amount} credits</p>
+                    </div>
+                    <div class="corner-content"><i class='bx bxs-edit-alt' style="font-size: 25px;"></i></div>
+                    <div class="corner-content-delete hidden"><i class='bx bx-x' style="font-size: 35px;"></i></div>
+                `;
+                profileSpace.insertBefore(newProfile, profileSpace.firstChild);
+                
+                // Attach event listener to the new profile for redirecting to grader.html
+                newProfile.addEventListener('click', (event) => {
+                    // Check if the click target is one of the corner content elements or their child elements
+                    if (!event.target.closest('.corner-content') && !event.target.closest('.corner-content-delete') && !newProfile.classList.contains('edit-mode')) {
+                        const classId = newProfile.getAttribute('data-class-id');
+                        window.location.href = `/user/grader/${classId}`;
+                    }
+                });
+
+                // Attach event listeners to the new profile for edit and delete actions
+                attachProfileEventListeners(newProfile);
+            }
+
+            
+            function attachProfileEventListeners(profileElement) {
+                const editButton = profileElement.querySelector('.corner-content');
+                const deleteButton = profileElement.querySelector('.corner-content-delete');
+            
+                editButton.addEventListener('click', () => toggleEditMode(profileElement));
+                deleteButton.addEventListener('click', () => deleteProfile(profileElement));
+            }
+            
+            async function addClass(userId) {
+                try {
+                    const response = await fetch('/user/api/createClass', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({ userId })
+                    });
+            
+                    if (!response.ok) {
+                        throw new Error(`Failed to add class, status: ${response.status}`);
+                    }
+
+                    const newClass = await response.json();
+                    createNewProfile(newClass);
+                    return newClass; // Return the newly created class
+                } catch (error) {
+                    console.error("Error adding class:", error);
+                    throw error; // Re-throw the error to be caught by the caller
+                }
+            }
+            
+            function toggleEditMode(profileElement) {
+                const isEditMode = profileElement.classList.contains('edit-mode');
+                const titleElement = profileElement.querySelector('.profile-title');
+                let creditsElement = profileElement.querySelector('.profile-credits'); // Directly target the credits container
+                const deleteButton = profileElement.querySelector('.corner-content-delete');
+
+                // Extract the classId from the data attribute of the profile element
+                const classId = profileElement.getAttribute('data-class-id');
+
+                if (!isEditMode) {
+                    // Switch to edit mode by replacing inner HTML of the title and credits container
+                    titleElement.innerHTML = `<input type="text" value="${titleElement.textContent.trim()}" class="edit-field">`;
+                    creditsElement.innerHTML = `<input type="number" value="${creditsElement.textContent.trim().split(" ")[0]}" class="edit-field" step="1">`;
+                    deleteButton.classList.remove('hidden');
+                } else {
+                    // Extract input values
+                    const titleInput = titleElement.querySelector('input').value;
+                    const creditsInput = creditsElement.querySelector('input').value;
+                    deleteButton.classList.add('hidden');
+                    // find a way to sync database so edits on 1st time load go through
+
+                    // Update the display text
+                    titleElement.textContent = titleInput;
+                    creditsElement.textContent = `${creditsInput} credits`;
+
+                    updateProfileData(classId, titleInput, creditsInput);
+
+                    // Check if the profile is not in edit mode before allowing redirection
+                    if (!profileElement.classList.contains('edit-mode')) {
+                        // Redirect to the new link only if not in edit mode
+                        const classId = profileElement.getAttribute('data-class-id');
+                        window.location.href = `/grader.html/${classId}`;
+                    }
+                }
+                profileElement.classList.toggle('edit-mode');
+            }
+
+            
+            async function updateProfileData(classId, title, credits) {
+                try {
+                    const response = await fetch('/user/api/updateProfile', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        // Make sure these keys match your mongoose model / schema keys
+                        body: JSON.stringify({ class_id: classId, class_name: title, credit_amount: parseInt(credits, 10) })
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`Failed to update profile, status: ${response.status}`);
+                    }
+
+                    console.log('Profile updated successfully');
+                    calculateCareerGrade();
+                } catch (error) {
+                    console.error("Error updating profile:", error);
+                }
+            }
+
+            
+            async function deleteProfile(profileElement) {
+                const classId = profileElement.dataset.classId;
+                try {
+                    const response = await fetch(`/user/api/deleteClass/${classId}`, {
+                        method: 'DELETE',
+                    });
+            
+                    if (!response.ok) {
+                        throw new Error(`Failed to delete profile, status: ${response.status}`);
+                    }
+            
+                    profileElement.remove();
+                    console.log('Profile deleted successfully');
+                } catch (error) {
+                    console.error("Error deleting profile:", error);
+                }
+            }
+            
+            async function checkUserLoginStatus() {
+                try {
+                    const response = await fetch('/user/api/user', {
+                        method: 'GET',
+                        credentials: 'include',
+                    });
+            
+                    if (!response.ok) throw new Error('Network response was not ok');
+                    const data = await response.json();
+            
+                    if (data && data.user) {
+                        document.getElementById('loginStatus').style.display = 'none';
+                        document.getElementById('loginStatus2').style.display = 'block';
+                        document.getElementById('userName').textContent = data.user.name;
+                        // Save the user ID for later use
+                        globalUserId = data.user.id;
+                    } else {
+                        document.getElementById('loginStatus').style.display = 'block';
+                        document.getElementById('loginStatus2').style.display = 'none';
+                        throw error;
+                    }
+                } catch (error) {
+                    alert('You need to log in to access this feature.');
+                    window.location.assign('login.html');
+                }
+            }
+            
+            async function logoutUser() {
+                try {
+                    const response = await fetch('/user/logout', {
+                        method: 'POST',
+                        credentials: 'include',
+                    });
+            
+                    if (response.ok) {
+                        window.location.href = '/login.html';
+                    } else {
+                        console.error('Logout failed with status:', response.status);
+                    }
+                } catch (error) {
+                    console.error('Logout failed:', error);
+                }
+            }
+            // Save radio button values to the database
+            function saveRadioButtonValues(userId) {
+                const classfmtValue = document.querySelector('input[name="classfmt"]:checked').value;
+                const gradefmtValue = document.querySelector('input[name="gradefmt"]:checked').value;
+                const settingfmtValue = document.querySelector('input[name="settingfmt"]:checked').value;
+
+                // Example: Send these values to the server to save them in the database
+                const data = {
+                    classfmt: classfmtValue,
+                    gradefmt: gradefmtValue,
+                    settingfmt: settingfmtValue
+                };
+
+                // Example fetch request to send data to the server
+                fetch(`/user/api/saveRadioButtonValues/${userId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to save radio button values');
+                    }
+                    console.log('Radio button values saved successfully');
+                    calculateCareerGrade();
+                })
+                .catch(error => {
+                    console.error('Error saving radio button values:', error);
+                });
+            }
+
+            // Load radio button values from the database and update the radio buttons
+            function loadRadioButtonValues(userId) {
+                fetch(`/user/api/getRadioButtonValues/${userId}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to fetch radio button values');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // Example: Assuming data is an object containing the saved radio button values
+                    const classfmtValue = data.classfmt;
+                    const gradefmtValue = data.gradefmt;
+                    const settingfmtValue = data.settingfmt;
+
+                    // Update radio button selections based on retrieved values
+                    document.querySelector(`input[name="classfmt"][value="${classfmtValue}"]`).checked = true;
+                    document.querySelector(`input[name="gradefmt"][value="${gradefmtValue}"]`).checked = true;
+                    document.querySelector(`input[name="settingfmt"][value="${settingfmtValue}"]`).checked = true;
+
+                    console.log('Radio button values loaded successfully');
+                })
+                .catch(error => {
+                    console.error('Error loading radio button values:', error);
+                });
+            }
+
+
+            // Event listener for radio button changes to trigger saving
+            document.querySelectorAll('input[type="radio"]').forEach(radioButton => {
+                radioButton.addEventListener('change', function() {
+                    const userId = globalUserId; // Assuming globalUserId is accessible
+                    if (userId) {
+                        saveRadioButtonValues(userId);
+                    } else {
+                        console.error('User ID is not available.');
+                    }
+                });
+            });
+
+            function calculateCareerGrade() {
+                // Select all elements with the class 'profile-grade' and 'profile-credits'
+                const gradeElements = document.querySelectorAll('.profile-grade');
+                const creditElements = document.querySelectorAll('.profile-credits');
+
+                // Initialize a variable to track if any valid grades exist
+                let hasGrades = false;
+
+                // Check if there are any valid grades
+                gradeElements.forEach((gradeElement) => {
+                    if (gradeElement.textContent.trim() !== '--') {
+                        hasGrades = true;
+                    }
+                });
+
+                // If there are no valid grades, set the display to '--%' and return early
+                if (!hasGrades) {
+                    document.getElementById('careerGrade').textContent = '--';
+                    return;
+                }
+
+                if (document.querySelector('input[name="settingfmt"][value="1"]').checked) {
+                    let weightedGradesSum = 0;
+                    let totalCredits = 0;
+
+                    gradeElements.forEach((gradeElement, index) => {
+                        const gradeText = gradeElement.textContent.trim();
+                        const creditText = creditElements[index].textContent.trim();
+                        
+                        // Skip this grade if it is '--%'
+                        if (gradeText === '--%') return;
+
+                        // Extract only the numerical part of the grade if it ends with '%'
+                        const gradeNumber = gradeText.endsWith('%') ? gradeText.slice(0, -1) : gradeText;
+                        const numericGrade = parseFloat(convertLetterGradeToNumber(gradeNumber) || gradeNumber);
+                        
+                        // Extract numeric value of credits
+                        const credits = parseInt(creditText, 10);
+
+                        // Skip if grade or credits are not numbers
+                        if (isNaN(numericGrade) || isNaN(credits)) return;
+
+                        // Add the grade to the sum, weighted by its credits
+                        weightedGradesSum += numericGrade * credits;
+                        totalCredits += credits;
+                    });
+                    let weightedAverageGrade = totalCredits > 0 ? weightedGradesSum / totalCredits : 0;
+                    var decimalPlaces = parseInt(document.querySelector('input[name="gradefmt"]:checked').value, 10) + 1;
+                    weightedAverageGrade = weightedAverageGrade.toFixed(decimalPlaces) + "%"
+                    console.log('Weighted Average Grade:', weightedAverageGrade);
+                    document.getElementById('careerGrade').textContent = weightedAverageGrade;
+                } else {
+                    let totalGPASum = 0;
+                    let totalCredits = 0;
+                    let gpaValues = []; // This will store all GPA values for average calculation
+
+                    gradeElements.forEach((gradeElement, index) => {
+                        const gradeText = gradeElement.textContent.trim();
+                        const creditText = creditElements[index].textContent.trim();
+                        
+                        // Skip this grade if it is '--%'
+                        if (gradeText === '--%') return;
+
+                        // Extract only the numerical part of the grade if it ends with '%'
+                        const gradeNumber = gradeText.endsWith('%') ? gradeText.slice(0, -1) : gradeText;
+                        const numericGrade = parseFloat(convertLetterGradeToNumber(gradeNumber) || gradeNumber);
+                        
+                        // Extract numeric value of credits
+                        const credits = parseInt(creditText, 10);
+
+                        // Skip if grade or credits are not numbers
+                        if (isNaN(numericGrade) || isNaN(credits)) return;
+
+                        // Convert the numeric grade to GPA
+                        const gpa = convertPercentageToGPA(numericGrade);
+
+                        // Repeat the GPA value based on the number of credits and add to the GPA values array
+                        for (let i = 0; i < credits; i++) {
+                            gpaValues.push(gpa);
+                        }
+                        
+                        // Sum GPA weighted by credits for average calculation
+                        totalGPASum += gpa * credits;
+                        totalCredits += credits;
+                    });
+
+                    // Calculate the average GPA
+                    const averageGPA = totalCredits > 0 ? totalGPASum / totalCredits : 0;
+                    // Determine the number of decimal places based on the checked radio button
+                    var decimalPlaces = parseInt(document.querySelector('input[name="gradefmt"]:checked').value, 10) + 1;
+                    gradePointAverage = averageGPA.toFixed(decimalPlaces);
+                    console.log('Average GPA:', gradePointAverage);
+                    document.getElementById('careerGrade').textContent = gradePointAverage;
+                }
+            }
+
+            function convertLetterGradeToNumber(letterGrade) {
+                switch (letterGrade.toUpperCase()) {
+                    case "A+": return 100;
+                    case "A": return 95;
+                    case "A-": return 90;
+                    case "B+": return 87;
+                    case "B": return 85;
+                    case "B-": return 80;
+                    case "C+": return 77;
+                    case "C": return 75;
+                    case "C-": return 70;
+                    case "D+": return 67;
+                    case "D": return 65;
+                    case "D-": return 60;
+                    case "F": return 50;
+                    default: return letterGrade;
+                }
+            }
+            function convertPercentageToGPA(percentage) {
+                if (percentage >= 97) return 4.0;
+                if (percentage >= 93) return 3.9;
+                if (percentage >= 90) return 3.7;
+                if (percentage >= 87) return 3.3;
+                if (percentage >= 83) return 3.0;
+                if (percentage >= 80) return 2.7;
+                if (percentage >= 77) return 2.3;
+                if (percentage >= 73) return 2.0;
+                if (percentage >= 70) return 1.7;
+                if (percentage >= 67) return 1.3;
+                if (percentage >= 63) return 1.0;
+                if (percentage >= 60) return 0.7;
+                return 0.0;
+            }
+
+        </script>
+                        
+    </body>
+</html>

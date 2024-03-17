@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Omni Grader - Register</title>
+        <link rel="stylesheet" href="styles/Styles.css">
+        <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+    </head>
+    <body>
+        <header style = "margin-bottom: 20px;">
+            <div class="logo-container">
+                <img src="images/Website_Logo.png" alt="Logo" style="width:70px; height:auto;" />
+            </div>
+            <nav>
+                <ul>
+                    <li><a href="index.html">Home</a></li>
+                    <li><a href="login.html">Login</a></li>
+                    <li><a href="grader.html">Grader</a></li>
+                    <li><a href="class_selection.html">Class Selection</a></li>
+                </ul>
+            </nav>
+        </header>
+        
+        <section class="login-form-wrapper">
+            <div class="wrapper">
+                <form id="signupForm" action="">
+                    <h1 style="margin-top: 20px;">Create Account</h1>
+                    <div class="input-box" style="margin-top: 40px; margin-bottom: -10px;">
+                        <input type="email" id="email" name="email" placeholder="Email" required>
+                        <i class='bx bx-envelope' ></i>
+                    </div>
+                    <div class="input-box" style=" margin-bottom: -10px;">
+                        <input type="name" id="name" name="name" placeholder="Create Username" required>
+                        <i class='bx bx-user' ></i>
+                    </div>
+                    <div class="input-box">
+                        <input type="password" id="password" name="password" placeholder="Create Password" required>
+                        <i class='bx bx-lock-alt' ></i>
+                    </div>
+                    <button type="submit" class="btn" style="margin-top: 10px;">Register</button>
+                    <p id="errorMessage" style="display: none; color: red; text-align: center;"></p>
+                </form>
+            </div>
+        </section>
+
+        <div id="loginStatus">Please log in to access full features</div>
+
+        <script>
+            document.getElementById('signupForm').addEventListener('submit', function(e) {
+            e.preventDefault(); // Prevent the default form submission
+
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const name = document.getElementById('name').value;
+            const errorMessageElement = document.getElementById('errorMessage');
+
+            // Construct the request payload
+            const payload = {
+                name: name,
+                email: email,
+                password: password
+            };
+
+            // Send the POST request with fetch
+            fetch('/user/signup', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(payload),
+            })
+            .then(response => response.json()) // First, parse the JSON response
+            .then(data => {
+                // Check the status property in the response
+                if (data.status === "PENDING") {
+                    console.log('Pending:', data.message);
+                    errorMessageElement.textContent = data.message;
+                    errorMessageElement.style.display = 'block';
+                    errorMessageElement.style.color = 'white';
+                    // Clear the input fields
+                    document.getElementById('email').value = '';
+                    document.getElementById('password').value = '';
+                    document.getElementById('name').value = '';
+                    
+                } else if (data.status === "FAILED") {
+                    // Handle failed signup
+                    throw new Error(data.message || 'Signup failed. Please check your credentials.'); // Use the message from the response
+                }
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+                // Display the error message
+                errorMessageElement.textContent = error.message; // Display the error message from the catch block
+                errorMessageElement.style.display = 'block'; // Make the error message visible
+                errorMessageElement.style.color = 'red';
+            });
+        });
+
+        </script>
+    </body>
+</html>

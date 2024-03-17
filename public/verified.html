@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Omni Grader - Account Verification</title>
+        <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+    </head>
+    <style>
+        @import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap");
+
+        body {
+            background-image: url('./../../../images/paper_background.png');
+            background-size: cover; /* Cover the entire width of the screen */
+            background-repeat: no-repeat; /* Prevent the image from repeating */
+            background-position: center; /* Center the image */
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Poppins", sans-serif;
+            color: white;
+        }
+        .login-form-wrapper {
+            box-sizing: border-box;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .wrapper {
+            margin-top: -50px;
+            width: 315px;
+            color: #fff;
+            border-radius: 10px;
+            padding: 30px 40px;
+            background: rgba(58, 53, 28, 0.5);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(5px);
+        }
+        .wrapper h1 {
+            font-size: 36px;
+            text-align: center;
+        }
+        header {
+            background: rgba(58, 53, 28, 0.5);
+            backdrop-filter: blur(5px);
+            border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+            padding: 5px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 50px;
+        }
+
+        .center-text {
+            text-align: center;
+        }
+        /* Initially hide both success and error sections */
+        .hidden {
+            display: none;
+        }
+    </style>
+    <body>
+        <header>
+            <div class="logo-container">
+                <img src="./../../../images/Website_Logo.png" alt="Logo" style="width:70px; height:auto;" />
+            </div>
+            <nav>
+                <ul>
+                </ul>
+            </nav>
+        </header>
+        <section class="login-form-wrapper">
+            <div id="success-section" class="wrapper hidden">
+                <h1 style="margin-left: 20px;"><i class='bx bxs-user-check' style="font-size: 100px; font-weight: 100;"></i></h1>
+                <p class="center-text">Verification Complete. You are now ready to log in.</p>
+            </div>
+            <div id="error-section" class="wrapper hidden">
+                <h1 style="margin-left: 20px;"><i class='bx bxs-user-x' style="font-size: 100px; font-weight: 100;"></i></h1>
+                <p id="error-message" class="center-text">Error Message</p>
+            </div>
+        </section>
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                const urlParams = new URLSearchParams(window.location.search);
+                const error = urlParams.get('error');
+                const message = urlParams.get('message');
+        
+                if (error === 'true') {
+                    // Show error section and set the message
+                    document.getElementById('error-section').classList.remove('hidden');
+                    document.getElementById('error-message').textContent = message || "An unknown error occurred.";
+                } else {
+                    // Show success section
+                    document.getElementById('success-section').classList.remove('hidden');
+                }
+            });
+        </script>
+    </body>
+</html>
